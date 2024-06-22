@@ -9,7 +9,7 @@ export const controller = async(req,res,next) => {
     try {
         await newUser.save()
 
-        res.send("use created successfully")
+        res.status(201).json('User created successfully!');
     } catch (error) {
         next(error)
     }
