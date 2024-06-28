@@ -3,6 +3,7 @@ import {Link, useNavigate} from 'react-router-dom'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {signInStart,signInSuccess,signInFailure} from '../redux/user/userSlice.js'
+import OAuth from '../components/OAuth.jsx'
  
 function SignIn() {
 
@@ -31,12 +32,12 @@ function SignIn() {
       })
       .then(res => res.json())
       .then(res => {
-        // console.log(res)
+        
         if(res.success === false){
           dispatch(signInFailure(res.message))
           return ;
         }
-        // console.log(res)
+        
         dispatch(signInSuccess(res))
         navigate('/')
       })
@@ -58,6 +59,7 @@ function SignIn() {
           className='border p-3 rounded-lg'
           id='email'
           onChange={handleInput}
+          required
         />
         <input
           type='password'
@@ -65,6 +67,7 @@ function SignIn() {
           className='border p-3 rounded-lg'
           id='password'
           onChange={handleInput}
+          required
         />
 
         <button
@@ -73,6 +76,7 @@ function SignIn() {
         >
           {loading ? "Loading......" :"Sign in"}
         </button>
+        <OAuth />
       </form>
       <div className='flex gap-2 mt-5'>
         <p>Dont an account?</p>

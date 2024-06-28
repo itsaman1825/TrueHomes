@@ -1,6 +1,7 @@
 // import React from 'react'
 import {Link, useNavigate} from 'react-router-dom'
 import { useState } from 'react'
+import OAuth from '../components/OAuth.jsx'
 
 function SignUp() {
 
@@ -31,7 +32,8 @@ function SignUp() {
       .then(res => res.json())
       .then(res => {
         setloading(false)
-        if(!res.ok){
+        if(res.success === false) {
+          console.log(res)
           seterror(res.message)
           return ;
         }
@@ -80,6 +82,7 @@ function SignUp() {
         >
           {loading ? "Loading......" :"Sign up"}
         </button>
+        <OAuth />
       </form>
       <div className='flex gap-2 mt-5'>
         <p>Have an account?</p>
