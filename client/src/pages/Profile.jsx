@@ -1,6 +1,6 @@
+/* eslint-disable no-useless-catch */
 /* eslint-disable no-unused-vars */
 // import React from 'react'
-import {useSelector } from 'react-redux'
 import {app} from '../firebase.js'
 import { useRef, useState, useEffect } from 'react';
 import {
@@ -10,19 +10,36 @@ import {
   uploadBytesResumable,
 } from 'firebase/storage';
 
+import { updateFailure,updateStart,updateSuccess } from '../redux/user/userSlice.js';
+import { useSelector,useDispatch } from 'react-redux';
+
 function Profile() {
-  const {currentUser} = useSelector((state) => state.user)
+  const {currentUser , loading, error} = useSelector((state) => state.user)
   const [file, setFile] = useState(undefined);
   const [filePerc, setFilePerc] = useState(0);
   const [fileUploadError, setFileUploadError] = useState(false);
   const [formData, setFormData] = useState({});
+  const [userUpadted, setUserUpadted] = useState(false)
   const fileRef = useRef()
+  const dispatch = useDispatch()
 
   useEffect(() => {
     if (file) {
       handleFileUpload(file);
     }
   }, [file]);
+
+  useEffect(() => {
+    let timeoutId;
+    if (userUpadted) {
+      timeoutId = setTimeout(() => {
+        setUserUpadted(false); 
+      }, 2000); 
+    }
+
+    // Step 3: Clean up the timeout if the component unmounts or state changes before timeout completes
+    return () => clearTimeout(timeoutId);
+  }, [userUpadted]);
 
   const handleFileUpload = (file) => {
     const storage = getStorage(app);
@@ -47,11 +64,43 @@ function Profile() {
         console.log("done url downloading")
       }
     );
-  };
+  }
+
+  const handleInput = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    })
+  }
+
+  const handleSubmit = async(e) => {
+    e.preventDefault()
+    try {
+      updateStart()
+      const res = await fetch(`/api/user/update/${currentUser._id}`,{
+        method: 'POST',
+        headers:{
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({...formData})
+      })
+
+      const data = await res.json()
+      if(data.success===false){
+        dispatch(updateFailure(data.message))
+        return ;
+      }
+
+      dispatch(updateSuccess(data))
+      setUserUpadted(true)
+    } catch (error) {
+      dispatch(updateFailure(error.message))
+    }
+  }
   return (
     <div className='p-3 max-w-lg mx-auto'>
       <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
-      <form className='flex flex-col gap-4'>
+      <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
         <input
           onChange={(e) => setFile(e.target.files[0])}
           type='file'
@@ -79,6 +128,7 @@ function Profile() {
           )}
         </p>
         <input
+          onChange={handleInput}
           type='text'
           placeholder='username'
           defaultValue={currentUser.username}
@@ -86,6 +136,7 @@ function Profile() {
           className='border p-3 rounded-lg'
         />
         <input
+          onChange={handleInput}
           type='email'
           placeholder='email'
           id='email'
@@ -93,15 +144,17 @@ function Profile() {
           className='border p-3 rounded-lg'
         />
         <input
+          onChange={handleInput}
           type='password'
           placeholder='password'
           id='password'
           className='border p-3 rounded-lg'
         />
         <button
+          disabled={loading}
           className='bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80'
         >
-          Update
+          {loading ? 'Loading...' : 'Update'}
         </button>
       </form>
       <div className='flex justify-between mt-5'>
@@ -112,6 +165,10 @@ function Profile() {
           Sign out
         </span>
       </div>
+      <p className='text-red-700 mt-5 text-center'>{error ? error : ''}</p>
+      <p className='text-green-700 mt-5 text-center'>
+        {userUpadted ? 'User is updated successfully!' : ''}
+      </p>
     </div>
   )
 }
