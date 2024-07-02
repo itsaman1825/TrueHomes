@@ -10,7 +10,11 @@ import {
   uploadBytesResumable,
 } from 'firebase/storage';
 
-import { updateFailure,updateStart,updateSuccess } from '../redux/user/userSlice.js';
+import {useNavigate} from 'react-router';
+import {Link} from 'react-router-dom';
+import { updateFailure,updateStart,updateSuccess,
+  deleteUserFailure,deleteUserStart,deleteUserSuccess,
+  signOutUserFailure,signOutUserStart,signOutUserSuccess } from '../redux/user/userSlice.js';
 import { useSelector,useDispatch } from 'react-redux';
 
 function Profile() {
@@ -20,8 +24,11 @@ function Profile() {
   const [fileUploadError, setFileUploadError] = useState(false);
   const [formData, setFormData] = useState({});
   const [userUpadted, setUserUpadted] = useState(false)
+  const [userListings,setUserListings] = useState([])
+  const [showListingsError,setShowListingsError] = useState(false)
   const fileRef = useRef()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (file) {
@@ -37,7 +44,6 @@ function Profile() {
       }, 2000); 
     }
 
-    // Step 3: Clean up the timeout if the component unmounts or state changes before timeout completes
     return () => clearTimeout(timeoutId);
   }, [userUpadted]);
 
@@ -91,12 +97,89 @@ function Profile() {
         return ;
       }
 
+      document.getElementById('password').value=''
       dispatch(updateSuccess(data))
       setUserUpadted(true)
     } catch (error) {
       dispatch(updateFailure(error.message))
     }
   }
+
+  const handleDeleteUser = async() => {
+    try {
+      dispatch(deleteUserStart())
+      const res = await fetch(`/api/user/delete/${currentUser._id}`,{
+        method: 'DELETE',
+      })
+
+      const data = await res.json()
+      if(data.success === false){
+        dispatch(deleteUserFailure(data.message))
+        return ;
+      }
+
+      dispatch(deleteUserSuccess())
+      navigate('/login')
+    } catch (error) {
+      dispatch(deleteUserFailure(error.message))
+    }
+  }
+
+  const handleSignOutUser = async() => {
+    try {
+      dispatch(signOutUserStart())
+      const res = await fetch(`/api/auth/signout`)
+
+      const data = await res.json()
+      if(data.success === false){
+        dispatch(signOutUserFailure(data.message))
+        return ;
+      }
+
+      dispatch(signOutUserSuccess())
+      navigate('/login')
+    } catch (error) {
+      dispatch(signOutUserFailure(error.message))
+    }
+  }
+
+  const handleShowListings = async() =>{
+    try {
+      setShowListingsError(false)
+      const res = await fetch(`/api/user/getuserlistings/${currentUser._id}`)
+
+      const data = await res.json()
+      // console.log(typeof data)
+      // console.log(data)
+      if(data.success === false){
+        setShowListingsError(true)
+        return ;
+      }
+
+      setUserListings(data)
+    } catch (error) {
+      setShowListingsError(true)
+    }
+  }
+
+  const handleListingDelete = async(id) => {
+    try {
+      const res = await fetch(`/api/listing/delete/${id}`,{
+        method: 'DELETE',
+      })
+
+      const data = await res.json()
+
+      if(res.success===false){
+        console.log(res.message)
+      }
+
+      setUserListings((prev) => prev.filter((list) => list._id!==id))
+    } catch (error) {
+      console.log(error.message)
+    }
+  }
+
   return (
     <div className='p-3 max-w-lg mx-auto'>
       <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
@@ -156,12 +239,15 @@ function Profile() {
         >
           {loading ? 'Loading...' : 'Update'}
         </button>
+        <Link to='/create-listing' className='bg-green-700 text-white text-center rounded-lg uppercase p-3 hover:opacity-95 '>
+          Create Listing
+        </Link>
       </form>
       <div className='flex justify-between mt-5'>
-        <span className='text-red-700 cursor-pointer'>
+        <span onClick={handleDeleteUser} className='text-red-700 cursor-pointer'>
           Delete account
         </span>
-        <span className='text-red-700 cursor-pointer'>
+        <span onClick={handleSignOutUser} className='text-red-700 cursor-pointer'>
           Sign out
         </span>
       </div>
@@ -169,6 +255,59 @@ function Profile() {
       <p className='text-green-700 mt-5 text-center'>
         {userUpadted ? 'User is updated successfully!' : ''}
       </p>
+
+      <button onClick={handleShowListings} className='text-green-700 w-full'>
+        Show Listings
+      </button>
+      <p className='text-red-700 mt-5'>
+        {showListingsError ? 'Error showing listings' : ''}
+      </p>
+
+      {/* {userListings && userListings.length==0 && (
+        <p className='text-red-700 mt-5'>
+          you currently have no listing 
+        </p>
+      )} */}
+
+      {userListings && userListings.length > 0 && (
+        <div className='flex flex-col gap-4'>
+          <h1 className='text-center mt-7 text-2xl font-semibold'>
+            Your Listings
+          </h1>
+          {userListings.map((listing) => (
+            <div
+              key={listing._id}
+              className='border rounded-lg p-3 flex justify-between items-center gap-4'
+            >
+              <Link to={`/listing/${listing._id}`}>
+                <img
+                  src={listing.imageUrls[0]}
+                  alt='listing cover'
+                  className='h-16 w-16 object-contain'
+                />
+              </Link>
+              <Link
+                className='text-slate-700 font-semibold  hover:underline truncate flex-1'
+                to={`/listing/${listing._id}`}
+              >
+                <p>{listing.name}</p>
+              </Link>
+
+              <div className='flex flex-col item-center'>
+                <button
+                  onClick={() => handleListingDelete(listing._id)}
+                  className='text-red-700 uppercase'
+                >
+                  Delete
+                </button>
+                <Link to={`/update-listing/${listing._id}`}>
+                  <button className='text-green-700 uppercase'>Edit</button>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
