@@ -17,10 +17,6 @@ export const getListing = async(req, res, next) => {
             res.status(404).json('Listing not found')
         }
 
-        if(req.user.id !== listing.userRef){
-            res.status(401).json('You can only delete your own listing')
-        }
-
         res.status(200).json(listing)
     } catch (error) {
         next(error)
