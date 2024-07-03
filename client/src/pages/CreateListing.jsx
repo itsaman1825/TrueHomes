@@ -30,7 +30,8 @@ function CreateListing() {
     const navigate = useNavigate()
 
 
-    const handleImageUpload = () => {
+    const handleImageUpload = (e) => {
+        e.preventDefault()
         if(files.length == 0) {
             setImageUploadError('Choose a file')
             setUploading(false);

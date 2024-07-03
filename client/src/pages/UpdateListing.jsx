@@ -386,7 +386,7 @@ function UpdateListing() {
                         disabled={loading || uploading}
                         className='p-3 bg-slate-700 text-white rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
                     >
-                        {loading ? 'Editing...' : 'Edit listing'}
+                        {loading ? 'Updating...' : 'Update listing'}
                     </button>
                 </div>
             </form>
