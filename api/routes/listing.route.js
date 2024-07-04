@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/create',verifyUser,createListing)
 router.delete('/delete/:id',verifyUser,deleteListing)
-router.get('/getlisting/:id',verifyUser,getListing)
+router.get('/getlisting/:id',getListing)
 router.post('/updatelisting/:id',verifyUser,updateListing)
 router.get('/getlistings',getListings)
 
